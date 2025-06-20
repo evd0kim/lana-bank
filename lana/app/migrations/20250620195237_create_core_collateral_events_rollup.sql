@@ -12,8 +12,8 @@ CREATE TABLE core_collateral_events_rollup (
   collateral_amount JSONB,
 
   -- Collection rollups
-  ledger_tx_ids UUID[],
-  audit_entry_ids BIGINT[]
+  audit_entry_ids BIGINT[],
+  ledger_tx_ids UUID[]
 
 );
 
@@ -55,16 +55,16 @@ BEGIN
     new_row.abs_diff := (NEW.event -> 'abs_diff');
     new_row.action := (NEW.event -> 'action');
     new_row.collateral_amount := (NEW.event -> 'collateral_amount');
-    new_row.ledger_tx_ids := CASE
-       WHEN NEW.event ? 'ledger_tx_ids' THEN
-         ARRAY(SELECT value::text::UUID FROM jsonb_array_elements_text(NEW.event -> 'ledger_tx_ids'))
-       ELSE ARRAY[]::UUID[]
-     END
-;
     new_row.audit_entry_ids := CASE
        WHEN NEW.event ? 'audit_entry_ids' THEN
          ARRAY(SELECT value::text::BIGINT FROM jsonb_array_elements_text(NEW.event -> 'audit_entry_ids'))
        ELSE ARRAY[]::BIGINT[]
+     END
+;
+    new_row.ledger_tx_ids := CASE
+       WHEN NEW.event ? 'ledger_tx_ids' THEN
+         ARRAY(SELECT value::text::UUID FROM jsonb_array_elements_text(NEW.event -> 'ledger_tx_ids'))
+       ELSE ARRAY[]::UUID[]
      END
 ;
   ELSE
@@ -74,8 +74,8 @@ BEGIN
     new_row.abs_diff := current_row.abs_diff;
     new_row.action := current_row.action;
     new_row.collateral_amount := current_row.collateral_amount;
-    new_row.ledger_tx_ids := current_row.ledger_tx_ids;
     new_row.audit_entry_ids := current_row.audit_entry_ids;
+    new_row.ledger_tx_ids := current_row.ledger_tx_ids;
   END IF;
 
   -- Update only the fields that are modified by the specific event
@@ -87,8 +87,8 @@ BEGIN
       new_row.abs_diff := (NEW.event -> 'abs_diff');
       new_row.action := (NEW.event -> 'action');
       new_row.collateral_amount := (NEW.event -> 'collateral_amount');
-      new_row.ledger_tx_ids := array_append(COALESCE(current_row.ledger_tx_ids, ARRAY[]::UUID[]), (NEW.event ->> 'ledger_tx_id')::UUID);
       new_row.audit_entry_ids := array_append(COALESCE(current_row.audit_entry_ids, ARRAY[]::BIGINT[]), (NEW.event -> 'audit_info' ->> 'audit_entry_id')::BIGINT);
+      new_row.ledger_tx_ids := array_append(COALESCE(current_row.ledger_tx_ids, ARRAY[]::UUID[]), (NEW.event ->> 'ledger_tx_id')::UUID);
   END CASE;
 
   INSERT INTO core_collateral_events_rollup (
@@ -101,8 +101,8 @@ BEGIN
     abs_diff,
     action,
     collateral_amount,
-    ledger_tx_ids,
-    audit_entry_ids
+    audit_entry_ids,
+    ledger_tx_ids
   )
   VALUES (
     new_row.id,
@@ -114,8 +114,8 @@ BEGIN
     new_row.abs_diff,
     new_row.action,
     new_row.collateral_amount,
-    new_row.ledger_tx_ids,
-    new_row.audit_entry_ids
+    new_row.audit_entry_ids,
+    new_row.ledger_tx_ids
   )
   ON CONFLICT (id) DO UPDATE SET
     last_sequence = EXCLUDED.last_sequence,
@@ -125,8 +125,8 @@ BEGIN
     abs_diff = EXCLUDED.abs_diff,
     action = EXCLUDED.action,
     collateral_amount = EXCLUDED.collateral_amount,
-    ledger_tx_ids = EXCLUDED.ledger_tx_ids,
-    audit_entry_ids = EXCLUDED.audit_entry_ids;
+    audit_entry_ids = EXCLUDED.audit_entry_ids,
+    ledger_tx_ids = EXCLUDED.ledger_tx_ids;
 
   RETURN NEW;
 END;

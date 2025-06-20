@@ -201,50 +201,25 @@ pub fn generate_rollup_migrations(
         fs::create_dir_all(migrations_dir)?;
     }
 
-    // Read template files
-    let table_template_path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("src")
-        .join("templates")
-        .join("rollup_table_only.sql.hbs");
-    let table_template_content = fs::read_to_string(&table_template_path)?;
+    // Embed template files at compile time
+    let table_template_content = include_str!("../templates/rollup_table_only.sql.hbs");
+    let trigger_function_template_content = include_str!("../templates/rollup_trigger_function.sql.hbs");
+    let trigger_creation_template_content = include_str!("../templates/rollup_trigger_creation.sql.hbs");
+    let alter_template_content = include_str!("../templates/rollup_table_alter.sql.hbs");
 
-    let trigger_function_template_path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("src")
-        .join("templates")
-        .join("rollup_trigger_function.sql.hbs");
-    let trigger_function_template_content = fs::read_to_string(&trigger_function_template_path)?;
-
-    let trigger_creation_template_path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("src")
-        .join("templates")
-        .join("rollup_trigger_creation.sql.hbs");
-    let trigger_creation_template_content = fs::read_to_string(&trigger_creation_template_path)?;
-
-    let alter_template_path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("src")
-        .join("templates")
-        .join("rollup_table_alter.sql.hbs");
-    let alter_template_content = fs::read_to_string(&alter_template_path)?;
-
-    // Read fragment templates
-    let fragments_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("src")
-        .join("templates")
-        .join("fragments");
-    let field_update_fragment = fs::read_to_string(fragments_dir.join("field_update.sql.hbs"))?;
-    let field_init_fragment = fs::read_to_string(fragments_dir.join("field_init.sql.hbs"))?;
-    let field_init_only_fragment = fs::read_to_string(fragments_dir.join("field_init.sql.hbs"))?;
-    let array_init_fragment = fs::read_to_string(fragments_dir.join("array_init.sql.hbs"))?;
-    let array_update_fragment = fs::read_to_string(fragments_dir.join("array_update.sql.hbs"))?;
-    let array_append_fragment = fs::read_to_string(fragments_dir.join("array_append.sql.hbs"))?;
-    let array_removal_fragment = fs::read_to_string(fragments_dir.join("array_removal.sql.hbs"))?;
-    let field_update_only_fragment =
-        fs::read_to_string(fragments_dir.join("field_update.sql.hbs"))?;
-    let field_update_basic_fragment =
-        fs::read_to_string(fragments_dir.join("field_update_basic.sql.hbs"))?;
-    let field_removal_fragment = fs::read_to_string(fragments_dir.join("field_removal.sql.hbs"))?;
-    let field_preserve_fragment = fs::read_to_string(fragments_dir.join("field_preserve.sql.hbs"))?;
-    let toggle_set_fragment = fs::read_to_string(fragments_dir.join("toggle_set.sql.hbs"))?;
+    // Embed fragment templates at compile time
+    let field_update_fragment = include_str!("../templates/fragments/field_update.sql.hbs");
+    let field_init_fragment = include_str!("../templates/fragments/field_init.sql.hbs");
+    let field_init_only_fragment = include_str!("../templates/fragments/field_init.sql.hbs");
+    let array_init_fragment = include_str!("../templates/fragments/array_init.sql.hbs");
+    let array_update_fragment = include_str!("../templates/fragments/array_update.sql.hbs");
+    let array_append_fragment = include_str!("../templates/fragments/array_append.sql.hbs");
+    let array_removal_fragment = include_str!("../templates/fragments/array_removal.sql.hbs");
+    let field_update_only_fragment = include_str!("../templates/fragments/field_update.sql.hbs");
+    let field_update_basic_fragment = include_str!("../templates/fragments/field_update_basic.sql.hbs");
+    let field_removal_fragment = include_str!("../templates/fragments/field_removal.sql.hbs");
+    let field_preserve_fragment = include_str!("../templates/fragments/field_preserve.sql.hbs");
+    let toggle_set_fragment = include_str!("../templates/fragments/toggle_set.sql.hbs");
 
     let mut handlebars = Handlebars::new();
     handlebars.register_helper(
