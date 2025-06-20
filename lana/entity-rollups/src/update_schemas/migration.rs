@@ -203,8 +203,10 @@ pub fn generate_rollup_migrations(
 
     // Embed template files at compile time
     let table_template_content = include_str!("../templates/rollup_table_only.sql.hbs");
-    let trigger_function_template_content = include_str!("../templates/rollup_trigger_function.sql.hbs");
-    let trigger_creation_template_content = include_str!("../templates/rollup_trigger_creation.sql.hbs");
+    let trigger_function_template_content =
+        include_str!("../templates/rollup_trigger_function.sql.hbs");
+    let trigger_creation_template_content =
+        include_str!("../templates/rollup_trigger_creation.sql.hbs");
     let alter_template_content = include_str!("../templates/rollup_table_alter.sql.hbs");
 
     // Embed fragment templates at compile time
@@ -216,7 +218,8 @@ pub fn generate_rollup_migrations(
     let array_append_fragment = include_str!("../templates/fragments/array_append.sql.hbs");
     let array_removal_fragment = include_str!("../templates/fragments/array_removal.sql.hbs");
     let field_update_only_fragment = include_str!("../templates/fragments/field_update.sql.hbs");
-    let field_update_basic_fragment = include_str!("../templates/fragments/field_update_basic.sql.hbs");
+    let field_update_basic_fragment =
+        include_str!("../templates/fragments/field_update_basic.sql.hbs");
     let field_removal_fragment = include_str!("../templates/fragments/field_removal.sql.hbs");
     let field_preserve_fragment = include_str!("../templates/fragments/field_preserve.sql.hbs");
     let toggle_set_fragment = include_str!("../templates/fragments/toggle_set.sql.hbs");
