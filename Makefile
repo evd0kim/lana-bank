@@ -96,7 +96,7 @@ run-server:
 run-server-with-bootstrap:
 	cargo run --all-features --bin lana-cli -- --config ./bats/lana-sim-time.yml | tee .e2e-logs
 
-check-code: check-code-rust check-code-apps check-code-tf
+check-code: check-code-rust-cargo check-code-apps check-code-tf
 
 check-code-tf:
 	tofu fmt -recursive .
