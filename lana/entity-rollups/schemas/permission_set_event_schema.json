@@ -24,15 +24,15 @@
           "format": "uuid",
           "type": "string"
         },
-        "initial_permissions": {
+        "name": {
+          "type": "string"
+        },
+        "permissions": {
           "items": {
             "$ref": "#/$defs/PermissionValues"
           },
           "type": "array",
           "uniqueItems": true
-        },
-        "name": {
-          "type": "string"
         },
         "type": {
           "const": "initialized",
@@ -43,7 +43,7 @@
         "type",
         "id",
         "name",
-        "initial_permissions"
+        "permissions"
       ],
       "type": "object"
     }

@@ -69,7 +69,7 @@
         "audit_info": {
           "$ref": "#/$defs/AuditInfo"
         },
-        "id": {
+        "role_id": {
           "format": "uuid",
           "type": "string"
         },
@@ -80,7 +80,7 @@
       },
       "required": [
         "type",
-        "id",
+        "role_id",
         "audit_info"
       ],
       "type": "object"
@@ -90,7 +90,7 @@
         "audit_info": {
           "$ref": "#/$defs/AuditInfo"
         },
-        "id": {
+        "role_id": {
           "format": "uuid",
           "type": "string"
         },
@@ -101,7 +101,7 @@
       },
       "required": [
         "type",
-        "id",
+        "role_id",
         "audit_info"
       ],
       "type": "object"

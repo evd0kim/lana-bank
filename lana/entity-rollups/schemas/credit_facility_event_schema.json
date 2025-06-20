@@ -416,7 +416,7 @@
         "audit_info": {
           "$ref": "#/$defs/AuditInfo"
         },
-        "idx": {
+        "interest_accrual_cycle_idx": {
           "format": "int32",
           "type": "integer"
         },
@@ -424,7 +424,7 @@
           "format": "uuid",
           "type": "string"
         },
-        "period": {
+        "interest_period": {
           "$ref": "#/$defs/InterestPeriod"
         },
         "type": {
@@ -435,8 +435,8 @@
       "required": [
         "type",
         "interest_accrual_id",
-        "idx",
-        "period",
+        "interest_accrual_cycle_idx",
+        "interest_period",
         "audit_info"
       ],
       "type": "object"
@@ -446,15 +446,15 @@
         "audit_info": {
           "$ref": "#/$defs/AuditInfo"
         },
-        "idx": {
+        "interest_accrual_cycle_idx": {
           "format": "int32",
           "type": "integer"
         },
-        "obligation_id": {
+        "ledger_tx_id": {
           "format": "uuid",
           "type": "string"
         },
-        "tx_id": {
+        "obligation_id": {
           "format": "uuid",
           "type": "string"
         },
@@ -465,8 +465,8 @@
       },
       "required": [
         "type",
-        "idx",
-        "tx_id",
+        "interest_accrual_cycle_idx",
+        "ledger_tx_id",
         "obligation_id",
         "audit_info"
       ],
@@ -480,14 +480,14 @@
         "collateral": {
           "$ref": "#/$defs/Satoshis"
         },
+        "collateralization_state": {
+          "$ref": "#/$defs/CollateralizationState"
+        },
         "outstanding": {
           "$ref": "#/$defs/CreditFacilityReceivable"
         },
         "price": {
           "$ref": "#/$defs/PriceOfOneBTC"
-        },
-        "state": {
-          "$ref": "#/$defs/CollateralizationState"
         },
         "type": {
           "const": "collateralization_state_changed",
@@ -496,7 +496,7 @@
       },
       "required": [
         "type",
-        "state",
+        "collateralization_state",
         "collateral",
         "outstanding",
         "price",
@@ -509,7 +509,7 @@
         "audit_info": {
           "$ref": "#/$defs/AuditInfo"
         },
-        "ratio": {
+        "collateralization_ratio": {
           "pattern": "^-?[0-9]+(\\.[0-9]+)?([eE][0-9]+)?$",
           "type": [
             "string",

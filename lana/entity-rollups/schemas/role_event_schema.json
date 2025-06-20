@@ -34,7 +34,7 @@
         "name": {
           "type": "string"
         },
-        "permission_sets": {
+        "permission_set_ids": {
           "items": {
             "format": "uuid",
             "type": "string"
@@ -51,7 +51,7 @@
         "type",
         "id",
         "name",
-        "permission_sets",
+        "permission_set_ids",
         "audit_info"
       ],
       "type": "object"

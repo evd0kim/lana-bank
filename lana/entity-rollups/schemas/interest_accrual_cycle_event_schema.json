@@ -295,7 +295,7 @@
         "audit_info": {
           "$ref": "#/$defs/AuditInfo"
         },
-        "tx_id": {
+        "ledger_tx_id": {
           "format": "uuid",
           "type": "string"
         },
@@ -309,7 +309,7 @@
       },
       "required": [
         "type",
-        "tx_id",
+        "ledger_tx_id",
         "tx_ref",
         "amount",
         "accrued_at",
@@ -326,16 +326,16 @@
           "format": "date",
           "type": "string"
         },
+        "ledger_tx_id": {
+          "format": "uuid",
+          "type": "string"
+        },
         "obligation_id": {
           "format": "uuid",
           "type": "string"
         },
         "total": {
           "$ref": "#/$defs/UsdCents"
-        },
-        "tx_id": {
-          "format": "uuid",
-          "type": "string"
         },
         "tx_ref": {
           "type": "string"
@@ -347,7 +347,7 @@
       },
       "required": [
         "type",
-        "tx_id",
+        "ledger_tx_id",
         "tx_ref",
         "obligation_id",
         "total",

@@ -72,12 +72,12 @@
         "audit_info": {
           "$ref": "#/$defs/AuditInfo"
         },
+        "collateral_amount": {
+          "$ref": "#/$defs/Satoshis"
+        },
         "ledger_tx_id": {
           "format": "uuid",
           "type": "string"
-        },
-        "new_value": {
-          "$ref": "#/$defs/Satoshis"
         },
         "type": {
           "const": "updated",
@@ -87,7 +87,7 @@
       "required": [
         "type",
         "ledger_tx_id",
-        "new_value",
+        "collateral_amount",
         "abs_diff",
         "action",
         "audit_info"
