@@ -383,30 +383,30 @@ pub fn generate_rollup_migrations(
             },
         ),
     );
-    handlebars.register_template_string("rollup_table_only", &table_template_content)?;
+    handlebars.register_template_string("rollup_table_only", table_template_content)?;
     handlebars.register_template_string(
         "rollup_trigger_function",
-        &trigger_function_template_content,
+        trigger_function_template_content,
     )?;
     handlebars.register_template_string(
         "rollup_trigger_creation",
-        &trigger_creation_template_content,
+        trigger_creation_template_content,
     )?;
-    handlebars.register_template_string("rollup_table_alter", &alter_template_content)?;
+    handlebars.register_template_string("rollup_table_alter", alter_template_content)?;
 
     // Register fragment templates
-    handlebars.register_template_string("field_update", &field_update_fragment)?;
-    handlebars.register_template_string("field_init", &field_init_fragment)?;
-    handlebars.register_template_string("field_init", &field_init_only_fragment)?;
-    handlebars.register_template_string("array_init", &array_init_fragment)?;
-    handlebars.register_template_string("array_update", &array_update_fragment)?;
-    handlebars.register_template_string("array_append", &array_append_fragment)?;
-    handlebars.register_template_string("array_removal", &array_removal_fragment)?;
-    handlebars.register_template_string("field_update", &field_update_only_fragment)?;
-    handlebars.register_template_string("field_update_basic", &field_update_basic_fragment)?;
-    handlebars.register_template_string("field_removal", &field_removal_fragment)?;
-    handlebars.register_template_string("field_preserve", &field_preserve_fragment)?;
-    handlebars.register_template_string("toggle_set", &toggle_set_fragment)?;
+    handlebars.register_template_string("field_update", field_update_fragment)?;
+    handlebars.register_template_string("field_init", field_init_fragment)?;
+    handlebars.register_template_string("field_init", field_init_only_fragment)?;
+    handlebars.register_template_string("array_init", array_init_fragment)?;
+    handlebars.register_template_string("array_update", array_update_fragment)?;
+    handlebars.register_template_string("array_append", array_append_fragment)?;
+    handlebars.register_template_string("array_removal", array_removal_fragment)?;
+    handlebars.register_template_string("field_update", field_update_only_fragment)?;
+    handlebars.register_template_string("field_update_basic", field_update_basic_fragment)?;
+    handlebars.register_template_string("field_removal", field_removal_fragment)?;
+    handlebars.register_template_string("field_preserve", field_preserve_fragment)?;
+    handlebars.register_template_string("toggle_set", toggle_set_fragment)?;
 
     for schema_change in schema_changes {
         let schema_info = &schema_change.schema_info;
