@@ -43,7 +43,16 @@
           || pkgs.lib.hasInfix "/lib/authz/src/rbac.conf" path
           || pkgs.lib.hasInfix "/.sqlx/" path
           || pkgs.lib.hasInfix "/lana/app/migrations/" path
-          || pkgs.lib.hasInfix "/lana/notification/src/email/templates/" path
+          || pkgs.lib.hasInfix "/lana/notification/src/email/templates/" path;
+      };
+
+      # Source filter for entity-rollups that includes templates and workspace dependencies
+      entityRollupsSource = pkgs.lib.cleanSourceWith {
+        src = ./.;
+        filter = path: type:
+          craneLib.filterCargoSources path type
+          || pkgs.lib.hasInfix "/lib/authz/src/rbac.conf" path
+          || pkgs.lib.hasInfix "/.sqlx/" path
           || pkgs.lib.hasInfix "/lana/entity-rollups/src/templates/" path;
       };
 
@@ -204,7 +213,7 @@
       };
 
       entity-rollups = craneLib.buildPackage {
-        src = rustSource;
+        src = entityRollupsSource;
         cargoToml = ./Cargo.toml;
         cargoArtifacts = debugCargoArtifacts;
         pname = "entity-rollups";
