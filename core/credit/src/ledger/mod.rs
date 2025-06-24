@@ -2065,11 +2065,25 @@ impl CreditLedger {
     ) -> Result<(), CreditLedgerError> {
         let mut op = self.cala.begin_operation().await?;
 
+        let Self {
+            facility_omnibus_account_ids,
+            collateral_omnibus_account_ids,
+            in_liquidation_omnibus_account_ids,
+            internal_account_sets,
+
+            cala: _,
+            journal_id: _,
+            credit_facility_control_id: _,
+            usd: _,
+            btc: _,
+        } = self;
+
         let mut account_set_ids = vec![
-            self.facility_omnibus_account_ids.account_set_id,
-            self.collateral_omnibus_account_ids.account_set_id,
+            facility_omnibus_account_ids.account_set_id,
+            collateral_omnibus_account_ids.account_set_id,
+            in_liquidation_omnibus_account_ids.account_set_id,
         ];
-        account_set_ids.extend(self.internal_account_sets.account_set_ids());
+        account_set_ids.extend(internal_account_sets.account_set_ids());
         let mut account_sets = self
             .cala
             .account_sets()
@@ -2082,8 +2096,10 @@ impl CreditLedger {
 
             facility_omnibus_parent_account_set_id,
             collateral_omnibus_parent_account_set_id,
+            in_liquidation_omnibus_parent_account_set_id,
             facility_parent_account_set_id,
             collateral_parent_account_set_id,
+            in_liquidation_parent_account_set_id,
             interest_income_parent_account_set_id,
             fee_income_parent_account_set_id,
             short_term_disbursed_integration_meta,
@@ -2116,6 +2132,16 @@ impl CreditLedger {
         self.attach_charts_account_set(
             &mut op,
             &mut account_sets,
+            self.in_liquidation_omnibus_account_ids.account_set_id,
+            *in_liquidation_omnibus_parent_account_set_id,
+            &charts_integration_meta,
+            |meta| meta.in_liquidation_omnibus_parent_account_set_id,
+        )
+        .await?;
+
+        self.attach_charts_account_set(
+            &mut op,
+            &mut account_sets,
             self.internal_account_sets.facility.id,
             *facility_parent_account_set_id,
             &charts_integration_meta,
@@ -2129,6 +2155,15 @@ impl CreditLedger {
             *collateral_parent_account_set_id,
             &charts_integration_meta,
             |meta| meta.collateral_parent_account_set_id,
+        )
+        .await?;
+        self.attach_charts_account_set(
+            &mut op,
+            &mut account_sets,
+            self.internal_account_sets.in_liquidation.id,
+            *in_liquidation_parent_account_set_id,
+            &charts_integration_meta,
+            |meta| meta.in_liquidation_parent_account_set_id,
         )
         .await?;
         self.attach_charts_account_set(
@@ -2826,8 +2861,10 @@ pub struct ChartOfAccountsIntegrationMeta {
 
     pub facility_omnibus_parent_account_set_id: CalaAccountSetId,
     pub collateral_omnibus_parent_account_set_id: CalaAccountSetId,
+    pub in_liquidation_omnibus_parent_account_set_id: CalaAccountSetId,
     pub facility_parent_account_set_id: CalaAccountSetId,
     pub collateral_parent_account_set_id: CalaAccountSetId,
+    pub in_liquidation_parent_account_set_id: CalaAccountSetId,
     pub interest_income_parent_account_set_id: CalaAccountSetId,
     pub fee_income_parent_account_set_id: CalaAccountSetId,
 
