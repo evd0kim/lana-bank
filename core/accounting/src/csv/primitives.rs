@@ -1,6 +1,12 @@
+use document_storage::DocumentId;
 use serde::{Deserialize, Serialize};
 
 use crate::primitives::AccountingCsvId;
+
+es_entity::entity_id! {
+    AccountingCsvDocumentId;
+    AccountingCsvDocumentId => DocumentId
+}
 
 #[derive(
     Debug, Clone, Serialize, Deserialize, PartialEq, strum::Display, strum::EnumString, Copy,
