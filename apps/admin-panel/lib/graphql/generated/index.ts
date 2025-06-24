@@ -2697,7 +2697,7 @@ export type LedgerTransactionQueryVariables = Exact<{
 }>;
 
 
-export type LedgerTransactionQuery = { __typename?: 'Query', ledgerTransaction?: { __typename?: 'LedgerTransaction', id: string, ledgerTransactionId: string, createdAt: any, description?: string | null, entries: Array<{ __typename?: 'JournalEntry', id: string, entryId: string, entryType: string, direction: DebitOrCredit, layer: Layer, amount: { __typename: 'BtcAmount', btc: Satoshis } | { __typename: 'UsdAmount', usd: UsdCents }, ledgerAccount: { __typename?: 'LedgerAccount', id: string, code?: any | null, name: string, closestAccountWithCode?: { __typename?: 'LedgerAccount', code?: any | null } | null } }> } | null };
+export type LedgerTransactionQuery = { __typename?: 'Query', ledgerTransaction?: { __typename?: 'LedgerTransaction', id: string, ledgerTransactionId: string, createdAt: any, description?: string | null, effective: any, entries: Array<{ __typename?: 'JournalEntry', id: string, entryId: string, entryType: string, direction: DebitOrCredit, layer: Layer, amount: { __typename: 'BtcAmount', btc: Satoshis } | { __typename: 'UsdAmount', usd: UsdCents }, ledgerAccount: { __typename?: 'LedgerAccount', id: string, code?: any | null, name: string, closestAccountWithCode?: { __typename?: 'LedgerAccount', code?: any | null } | null } }> } | null };
 
 export type BalanceSheetConfigureMutationVariables = Exact<{
   input: BalanceSheetModuleConfigureInput;
@@ -5674,6 +5674,7 @@ export const LedgerTransactionDocument = gql`
     ledgerTransactionId
     createdAt
     description
+    effective
     entries {
       id
       entryId
