@@ -1,6 +1,6 @@
 [package]
 name = "notification"
-version = "0.3.688-dev"
+version = "0.3.691-dev"
 edition = "2024"
 
 [features]
