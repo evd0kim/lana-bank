@@ -20,6 +20,7 @@ pub struct GeneratedDocumentDownloadLink {
 pub enum DocumentStatus {
     Active,
     Archived,
+    Deleted,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -127,6 +128,7 @@ impl Document {
         idempotency_guard!(self.events.iter_all(), DocumentEvent::Deleted { .. });
 
         self.events.push(DocumentEvent::Deleted { audit_info });
+        self.status = DocumentStatus::Deleted;
         Idempotent::Executed(())
     }
 
@@ -171,7 +173,7 @@ impl TryFromEvents<DocumentEvent> for Document {
                     // DownloadLinkGenerated event doesn't modify any fields
                 }
                 DocumentEvent::Deleted { .. } => {
-                    // Deleted event doesn't modify any fields (soft delete)
+                    builder = builder.status(DocumentStatus::Deleted);
                 }
                 DocumentEvent::Archived { .. } => {
                     builder = builder.status(DocumentStatus::Archived);
