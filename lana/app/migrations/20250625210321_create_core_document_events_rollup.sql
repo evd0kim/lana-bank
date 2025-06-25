@@ -102,7 +102,6 @@ BEGIN
       new_row.storage_identifier := (NEW.event ->> 'storage_identifier');
       new_row.audit_entry_ids := array_append(COALESCE(current_row.audit_entry_ids, ARRAY[]::BIGINT[]), (NEW.event -> 'audit_info' ->> 'audit_entry_id')::BIGINT);
     WHEN 'file_uploaded' THEN
-      new_row.audit_entry_ids := array_append(COALESCE(current_row.audit_entry_ids, ARRAY[]::BIGINT[]), (NEW.event -> 'audit_info' ->> 'audit_entry_id')::BIGINT);
       new_row.is_file_uploaded := true;
     WHEN 'upload_failed' THEN
       new_row.error := (NEW.event ->> 'error');
