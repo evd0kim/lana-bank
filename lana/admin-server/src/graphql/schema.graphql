@@ -1066,7 +1066,7 @@ enum DisbursalStatus {
 type Disbursed {
 	total: Total!
 	outstanding: Outstanding!
-	dueOutstanding: Outstanding!
+	outstandingPayable: Outstanding!
 }
 
 enum DocumentStatus {
@@ -1098,7 +1098,7 @@ type GovernanceNavigationItems {
 type Interest {
 	total: Total!
 	outstanding: Outstanding!
-	dueOutstanding: Outstanding!
+	outstandingPayable: Outstanding!
 }
 
 enum InterestInterval {

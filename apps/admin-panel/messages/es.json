@@ -515,8 +515,9 @@
         "details": {
           "facilityAmount": "Monto de Facilidad",
           "facilityRemaining": "Facilidad Restante",
-          "disbursedOutstanding": "Desembolsado y Pendiente",
-          "outstandingInterest": "Interés Pendiente",
+          "disbursedOutstanding": "Saldo desembolsado pendiente",
+          "disbursedOutstandingPayable": "Saldo desembolsado pendiente de pago",
+          "interestOutstanding": "Intereses pendientes",
           "totalOutstanding": "Total Pendiente",
           "totalInterest": "Interés Total",
           "totalDisbursed": "Total Desembolsado",

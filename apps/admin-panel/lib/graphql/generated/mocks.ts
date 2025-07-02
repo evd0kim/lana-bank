@@ -1377,8 +1377,8 @@ export const mockDisbursed = (overrides?: Partial<Disbursed>, _relationshipsToOm
     relationshipsToOmit.add('Disbursed');
     return {
         __typename: 'Disbursed',
-        dueOutstanding: overrides && overrides.hasOwnProperty('dueOutstanding') ? overrides.dueOutstanding! : relationshipsToOmit.has('Outstanding') ? {} as Outstanding : mockOutstanding({}, relationshipsToOmit),
         outstanding: overrides && overrides.hasOwnProperty('outstanding') ? overrides.outstanding! : relationshipsToOmit.has('Outstanding') ? {} as Outstanding : mockOutstanding({}, relationshipsToOmit),
+        outstandingPayable: overrides && overrides.hasOwnProperty('outstandingPayable') ? overrides.outstandingPayable! : relationshipsToOmit.has('Outstanding') ? {} as Outstanding : mockOutstanding({}, relationshipsToOmit),
         total: overrides && overrides.hasOwnProperty('total') ? overrides.total! : relationshipsToOmit.has('Total') ? {} as Total : mockTotal({}, relationshipsToOmit),
     };
 };
@@ -1427,8 +1427,8 @@ export const mockInterest = (overrides?: Partial<Interest>, _relationshipsToOmit
     relationshipsToOmit.add('Interest');
     return {
         __typename: 'Interest',
-        dueOutstanding: overrides && overrides.hasOwnProperty('dueOutstanding') ? overrides.dueOutstanding! : relationshipsToOmit.has('Outstanding') ? {} as Outstanding : mockOutstanding({}, relationshipsToOmit),
         outstanding: overrides && overrides.hasOwnProperty('outstanding') ? overrides.outstanding! : relationshipsToOmit.has('Outstanding') ? {} as Outstanding : mockOutstanding({}, relationshipsToOmit),
+        outstandingPayable: overrides && overrides.hasOwnProperty('outstandingPayable') ? overrides.outstandingPayable! : relationshipsToOmit.has('Outstanding') ? {} as Outstanding : mockOutstanding({}, relationshipsToOmit),
         total: overrides && overrides.hasOwnProperty('total') ? overrides.total! : relationshipsToOmit.has('Total') ? {} as Total : mockTotal({}, relationshipsToOmit),
     };
 };
