@@ -10,14 +10,14 @@ deposit_balances as (
 deposit_accounts as (
     select *
     from
-        {{ ref('int_deposit_accounts') }}
+        {{ ref('int_core_deposit_account_events_rollup') }}
 )
 ,
 
 customers as (
     select *
     from
-        {{ ref('int_customers') }}
+        {{ ref('int_core_customer_events_rollup') }}
 )
 ,
 
