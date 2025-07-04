@@ -1652,6 +1652,26 @@ impl Mutation {
         )
     }
 
+    async fn chart_of_accounts_add_node(
+        &self,
+        ctx: &Context<'_>,
+        input: ChartOfAccountsAddNodeInput,
+    ) -> async_graphql::Result<ChartOfAccountsAddNodePayload> {
+        let (app, sub) = app_and_sub_from_ctx!(ctx);
+        exec_mutation!(
+            ChartOfAccountsAddNodePayload,
+            ChartOfAccounts,
+            ChartId,
+            ctx,
+            app.accounting().add_node(
+                sub,
+                input.chart_id.into(),
+                input.try_into()?,
+                TRIAL_BALANCE_STATEMENT_NAME,
+            )
+        )
+    }
+
     async fn balance_sheet_configure(
         &self,
         ctx: &Context<'_>,

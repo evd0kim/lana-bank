@@ -93,6 +93,14 @@ pub enum AccountCodeParseError {
     Empty,
     #[error("AccountCodeParseError - AccountCodeSectionParseError: {0}")]
     AccountCodeSectionParseError(#[from] AccountCodeSectionParseError),
+    #[error("AccountCodeParseError - InvalidParent")]
+    InvalidParent,
+}
+
+#[derive(Error, Debug)]
+pub enum AccountCodeError {
+    #[error("AccountCodeError - InvalidParent")]
+    InvalidParent,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -129,6 +137,13 @@ impl std::fmt::Display for AccountCodeSection {
 pub struct AccountCode {
     sections: Vec<AccountCodeSection>,
 }
+
+impl From<AccountCode> for Vec<AccountCodeSection> {
+    fn from(code: AccountCode) -> Self {
+        code.sections
+    }
+}
+
 impl AccountCode {
     pub fn new(section: Vec<AccountCodeSection>) -> Self {
         AccountCode { sections: section }
@@ -174,30 +189,50 @@ impl AccountCode {
         position == code.len()
     }
 
-    pub fn is_parent(&self, sections: &[AccountCodeSection]) -> bool {
-        if self.sections.is_empty() {
-            return false;
-        }
-        if sections.is_empty() {
+    pub fn is_parent_of(&self, child_sections: &[AccountCodeSection]) -> bool {
+        let parent_sections = &self.sections;
+        if parent_sections.is_empty() || child_sections.is_empty() {
             return false;
         }
 
-        for (i, parent_section) in self.sections.iter().enumerate() {
-            if i >= sections.len() {
+        if parent_sections == child_sections {
+            return false;
+        }
+
+        for (i, parent_section) in parent_sections.iter().enumerate() {
+            if i >= child_sections.len() {
                 return false;
             }
 
-            if !sections[i].code.starts_with(&parent_section.code) {
+            let child_section = &child_sections[i];
+            if !child_section.code.starts_with(&parent_section.code) {
                 return false;
             }
-            if sections[i].code.len() <= parent_section.code.len()
-                && sections[i].code != parent_section.code
+            if child_section.code.len() <= parent_section.code.len()
+                && child_section.code != parent_section.code
             {
                 return false;
             }
         }
 
         true
+    }
+
+    pub fn check_valid_parent(
+        &self,
+        parent_code: Option<AccountCode>,
+    ) -> Result<(), AccountCodeError> {
+        let parent_code = if let Some(parent_code) = parent_code {
+            parent_code
+        } else {
+            return Ok(());
+        };
+
+        if parent_code.is_parent_of(&self.sections) {
+            Ok(())
+        } else {
+            Err(AccountCodeError::InvalidParent)
+        }
     }
 }
 
@@ -268,19 +303,21 @@ pub struct AccountSpec {
 }
 
 impl AccountSpec {
-    pub(super) fn new(
+    pub fn try_new(
         parent: Option<AccountCode>,
         sections: Vec<AccountCodeSection>,
         name: AccountName,
         normal_balance_type: DebitOrCredit,
-    ) -> Self {
+    ) -> Result<Self, AccountCodeError> {
         let code = AccountCode { sections };
-        AccountSpec {
+        code.check_valid_parent(parent.clone())?;
+
+        Ok(AccountSpec {
             parent,
             code,
             name,
             normal_balance_type,
-        }
+        })
     }
 
     pub fn has_parent(&self) -> bool {
@@ -1190,31 +1227,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn is_parent_same_level() {
-        let parent = "1".parse::<AccountCodeSection>().unwrap();
-        let child = "11".parse::<AccountCodeSection>().unwrap();
-        let account_code = AccountCode::new(vec![parent]);
-        assert!(account_code.is_parent(&[child]));
-    }
-
-    #[test]
-    fn is_parent_next_level() {
-        let parent = "11".parse::<AccountCodeSection>().unwrap();
-        let child = "0201".parse::<AccountCodeSection>().unwrap();
-        let account_code = AccountCode::new(vec![parent.clone()]);
-        assert!(account_code.is_parent(&[parent, child]));
-    }
-
-    #[test]
-    fn is_parent_next_level_with_sub() {
-        let parent = "11".parse::<AccountCodeSection>().unwrap();
-        let sub = "01".parse::<AccountCodeSection>().unwrap();
-        let child = "0201".parse::<AccountCodeSection>().unwrap();
-        let account_code = AccountCode::new(vec![parent.clone(), sub.clone()]);
-        assert!(account_code.is_parent(&[parent, sub, child]));
-    }
-
-    #[test]
     fn chart_level() {
         let parent = "11".parse::<AccountCodeSection>().unwrap();
         let sub = "01".parse::<AccountCodeSection>().unwrap();
@@ -1239,5 +1251,123 @@ mod tests {
         let account_code = AccountCode::new(vec![parent, sub, child]);
         assert!(account_code.is_equivalent_to_str("11010201"));
         assert!(!account_code.is_equivalent_to_str("110102010"));
+    }
+
+    #[test]
+    fn errors_for_new_spec_if_invalid_parent() {
+        let parent = "10".parse::<AccountCode>().unwrap();
+        let child = "11".parse::<AccountCode>().unwrap();
+        let new_spec = AccountSpec::try_new(
+            Some(parent),
+            child.sections,
+            "spec".parse().unwrap(),
+            Default::default(),
+        );
+        assert!(matches!(new_spec, Err(AccountCodeError::InvalidParent)));
+    }
+
+    mod is_parent_of {
+        use super::*;
+
+        #[test]
+        fn not_parent_when_child_sections_empty() {
+            let parent = "10".parse::<AccountCode>().unwrap();
+            let child = AccountCode::new(vec![]);
+            assert_eq!(parent.is_parent_of(&child.sections), false);
+        }
+
+        #[test]
+        fn not_parent_when_parent_sections_empty() {
+            let parent = AccountCode::new(vec![]);
+            let child = "10".parse::<AccountCode>().unwrap();
+            assert_eq!(parent.is_parent_of(&child.sections), false);
+        }
+
+        #[test]
+        fn is_parent_when_prefix_matches_in_first_section() {
+            let parent = "1".parse::<AccountCode>().unwrap();
+            let child = "11".parse::<AccountCode>().unwrap();
+            assert_eq!(parent.is_parent_of(&child.sections), true);
+        }
+
+        #[test]
+        fn not_parent_when_prefix_does_not_match_in_first_section() {
+            let parent = "10".parse::<AccountCode>().unwrap();
+            let child = "11".parse::<AccountCode>().unwrap();
+            assert_eq!(parent.is_parent_of(&child.sections), false);
+        }
+
+        #[test]
+        fn is_parent_when_child_has_more_sections_than_parent() {
+            let parent = "10".parse::<AccountCode>().unwrap();
+            let child = "10.20".parse::<AccountCode>().unwrap();
+            assert_eq!(parent.is_parent_of(&child.sections), true);
+
+            let parent = "10.20".parse::<AccountCode>().unwrap();
+            let child = "10.20.0201".parse::<AccountCode>().unwrap();
+            assert_eq!(parent.is_parent_of(&child.sections), true);
+        }
+
+        #[test]
+        fn not_parent_when_child_has_more_sections_than_parent() {
+            let parent = "10.20".parse::<AccountCode>().unwrap();
+            let child = "10".parse::<AccountCode>().unwrap();
+            assert_eq!(parent.is_parent_of(&child.sections), false);
+        }
+
+        #[test]
+        fn not_parent_when_sections_equal() {
+            let parent = "10".parse::<AccountCode>().unwrap();
+            let child = "10".parse::<AccountCode>().unwrap();
+            assert_eq!(parent.is_parent_of(&child.sections), false);
+        }
+
+        #[test]
+        fn not_parent_when_parent_code_longer_but_prefixed() {
+            let parent = "100".parse::<AccountCode>().unwrap();
+            let child = "10".parse::<AccountCode>().unwrap();
+            assert_eq!(parent.is_parent_of(&child.sections), false);
+        }
+
+        #[test]
+        fn not_parent_when_parent_code_longer_but_prefixed_in_second_section() {
+            let parent = "1.23".parse::<AccountCode>().unwrap();
+            let child = "1.2".parse::<AccountCode>().unwrap();
+            assert_eq!(parent.is_parent_of(&child.sections), false);
+        }
+
+        #[test]
+        fn not_parent_when_prefix_mismatch_in_second_section() {
+            let parent = "1.23".parse::<AccountCode>().unwrap();
+            let child = "1.20".parse::<AccountCode>().unwrap();
+            assert_eq!(parent.is_parent_of(&child.sections), false);
+        }
+    }
+
+    mod check_valid_parent {
+        use super::*;
+
+        #[test]
+        fn ok_when_no_parent() {
+            let child = "10.20".parse::<AccountCode>().unwrap();
+            assert!(child.check_valid_parent(None).is_ok());
+        }
+
+        #[test]
+        fn ok_when_is_parent() {
+            let parent = "1".parse::<AccountCode>().unwrap();
+            let child = "11".parse::<AccountCode>().unwrap();
+            assert!(child.check_valid_parent(Some(parent)).is_ok());
+        }
+
+        #[test]
+        fn err_when_not_parent() {
+            let parent = "10".parse::<AccountCode>().unwrap();
+            let child = "11".parse::<AccountCode>().unwrap();
+            assert!(matches!(
+                child.check_valid_parent(Some(parent)),
+                Err(AccountCodeError::InvalidParent)
+            ));
+        }
     }
 }
