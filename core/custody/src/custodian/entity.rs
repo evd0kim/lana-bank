@@ -105,6 +105,7 @@ impl Custodian {
         Ok(())
     }
 
+    #[cfg(not(feature = "mock-custodian"))]
     pub async fn custodian_client(
         self,
         key: EncryptionKey,
@@ -113,6 +114,19 @@ impl Custodian {
             CustodianConfig::Komainu(config) => {
                 Ok(Box::new(komainu::KomainuClient::new(config.into())))
             }
+        }
+    }
+
+    #[cfg(feature = "mock-custodian")]
+    pub async fn custodian_client(
+        self,
+        key: EncryptionKey,
+    ) -> Result<Box<dyn CustodianClient>, CustodianClientError> {
+        match self.custodian_config(key) {
+            CustodianConfig::Komainu(config) => {
+                Ok(Box::new(komainu::KomainuClient::new(config.into())))
+            }
+            CustodianConfig::Mock => Ok(Box::new(super::client::mock::CustodianMock)),
         }
     }
 }

@@ -10,6 +10,7 @@ sim-time = [
   "lana-app/sim-time"
 ]
 sim-bootstrap = ["dep:sim-bootstrap"]
+mock-custodian = ["admin-server/mock-custodian"]
 
 fail-on-warnings = []
 

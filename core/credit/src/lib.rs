@@ -412,10 +412,20 @@ where
         let mut db = self.facilities.begin_op().await?;
 
         let wallet_id = if let Some(custodian_id) = custodian_id {
+            let custodian_id = custodian_id.into();
+
+            #[cfg(feature = "mock-custodian")]
+            if custodian_id.is_mock_custodian() {
+                self.custody
+                    .ensure_mock_custodian_in_op(&mut db, sub)
+                    .await?;
+            }
+
             let wallet = self
                 .custody
-                .create_new_wallet_in_op(&mut db, sub, custodian_id.into())
+                .create_new_wallet_in_op(&mut db, sub, custodian_id)
                 .await?;
+
             Some(wallet.id)
         } else {
             None
@@ -650,14 +660,11 @@ where
             .find_by_id_without_audit(credit_facility_id)
             .await?;
 
-        // check if facility has custody_config???
-        // if it does this should error
-
         let mut db = self.facilities.begin_op().await?;
 
         let collateral_update = if let Some(collateral_update) = self
             .collaterals
-            .record_collateral_update_in_op(
+            .record_manual_collateral_update_in_op(
                 &mut db,
                 credit_facility.collateral_id,
                 updated_collateral,
@@ -765,7 +772,7 @@ where
 
             CompletionOutcome::Completed((facility, completion)) => {
                 self.collaterals
-                    .record_collateral_update_in_op(
+                    .record_manual_collateral_update_in_op(
                         &mut db,
                         facility.collateral_id,
                         Satoshis::ZERO,
