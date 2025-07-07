@@ -1,0 +1,17 @@
+[package]
+name = "bitgo"
+version = "0.3.707-dev"
+license = "FSL-1.1-ALv2"
+edition = "2021"
+
+[features]
+
+fail-on-warnings = []
+
+[dependencies]
+
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

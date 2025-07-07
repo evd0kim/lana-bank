@@ -1,10 +1,16 @@
+mod bitgo;
+mod komainu;
+
 use chacha20poly1305::{
     ChaCha20Poly1305,
     aead::{Aead, AeadCore, KeyInit, OsRng},
 };
 use serde::{Deserialize, Serialize};
 
-use super::{entity::KomainuConfig, error::CustodianError};
+pub use bitgo::BitgoConfig;
+pub use komainu::KomainuConfig;
+
+use super::error::CustodianError;
 
 pub type EncryptionKey = chacha20poly1305::Key;
 
@@ -31,31 +37,24 @@ pub struct DeprecatedEncryptionKey {
     pub key: String,
 }
 
-impl From<KomainuConfig> for komainu::KomainuConfig {
-    fn from(config: KomainuConfig) -> Self {
-        komainu::KomainuConfig {
-            api_user: config.api_key,
-            api_secret: config.api_secret,
-            secret_key: komainu::KomainuSecretKey::Plain {
-                dem: config.secret_key,
-            },
-            komainu_test: config.testing_instance,
-        }
-    }
-}
-
 #[cfg(not(feature = "mock-custodian"))]
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, strum::EnumDiscriminants)]
+#[strum_discriminants(derive(strum::Display))]
+#[strum_discriminants(strum(serialize_all = "kebab-case"))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum CustodianConfig {
     Komainu(KomainuConfig),
+    Bitgo(BitgoConfig),
 }
 
 #[cfg(feature = "mock-custodian")]
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, strum::EnumDiscriminants)]
+#[strum_discriminants(derive(strum::Display))]
+#[strum_discriminants(strum(serialize_all = "kebab-case"))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum CustodianConfig {
     Komainu(KomainuConfig),
+    Bitgo(BitgoConfig),
     Mock,
 }
 
