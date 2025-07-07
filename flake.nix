@@ -348,6 +348,24 @@
             shellHook = ''
               export LANA_CONFIG="$(pwd)/bats/lana.yml"
               export MELTANO_PROJECT_ROOT="$(pwd)/meltano"
+
+              # clear any previous setting
+              unset DOCKER_HOST
+
+              # Auto-detect engine: prefer podman if (docker missing || PREFER_PODMAN=1)
+              podman_ok=false; command -v podman &>/dev/null && podman_ok=true
+              docker_ok=false; command -v docker &>/dev/null && docker_ok=true
+              if "$podman_ok" && { ! "$docker_ok" || [[ "''${PREFER_PODMAN:-}" == "1" ]]; }; then
+                export ENGINE_DEFAULT=podman
+
+                # wire up podman socket if available
+                socket="$($(pwd)/dev/bin/podman-get-socket.sh)"
+                if [[ "$socket" != "NO_SOCKET" ]]; then
+                  export DOCKER_HOST="$socket"
+                fi
+              else
+                export ENGINE_DEFAULT=docker
+              fi
             '';
           });
 
