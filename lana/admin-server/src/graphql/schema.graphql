@@ -1560,6 +1560,7 @@ type Query {
 	balanceSheetConfig: BalanceSheetModuleConfig
 	profitAndLossStatementConfig: ProfitAndLossStatementModuleConfig
 	accountingCsvsForLedgerAccountId(ledgerAccountId: UUID!, first: Int!, after: String): AccountingCsvDocumentConnection!
+	latestAccountingCsvForLedgerId(ledgerAccountId: UUID!): AccountingCsvDocument
 }
 
 type RealtimePrice {

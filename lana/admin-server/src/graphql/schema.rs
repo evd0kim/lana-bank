@@ -776,6 +776,23 @@ impl Query {
                 .list_for_ledger_account_id_paginated(sub, ledger_account_id, query)
         )
     }
+
+    async fn latest_accounting_csv_for_ledger_id(
+        &self,
+        ctx: &Context<'_>,
+        ledger_account_id: UUID,
+    ) -> async_graphql::Result<Option<AccountingCsvDocument>> {
+        let (app, sub) = app_and_sub_from_ctx!(ctx);
+        //TODO: look into fetch_latest / fetch_first on Descending vector or narrower query
+        // get_latest_for_ledger_account_id may be an appropriate method
+        let all_docs = app
+            .accounting()
+            .csvs()
+            .list_for_ledger_account_id(sub, ledger_account_id)
+            .await?;
+        let latest_doc = all_docs.into_iter().next();
+        Ok(latest_doc.map(AccountingCsvDocument::from))
+    }
 }
 
 pub struct Mutation;
