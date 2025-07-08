@@ -231,7 +231,7 @@ where
         Ok(())
     }
 
-    #[instrument(name = "core_custody.find_all_custodians", skip(self), err)]
+    #[instrument(name = "core_custody.find_all_wallets", skip(self), err)]
     pub async fn find_all_wallets<T: From<Wallet>>(
         &self,
         ids: &[WalletId],
