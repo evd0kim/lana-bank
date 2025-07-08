@@ -5,20 +5,20 @@ CREATE TABLE core_withdrawal_events_rollup (
   created_at TIMESTAMPTZ NOT NULL,
   modified_at TIMESTAMPTZ NOT NULL,
   -- Flattened fields from the event JSON
-  amount JSONB,
+  amount BIGINT,
   approval_process_id UUID,
-  deposit_account_id UUID,
-  reference VARCHAR,
   approved BOOLEAN,
+  deposit_account_id UUID,
   ledger_tx_id UUID,
+  reference VARCHAR,
 
   -- Collection rollups
   audit_entry_ids BIGINT[],
 
   -- Toggle fields
   is_approval_process_concluded BOOLEAN DEFAULT false,
-  is_confirmed BOOLEAN DEFAULT false,
-  is_cancelled BOOLEAN DEFAULT false
+  is_cancelled BOOLEAN DEFAULT false,
+  is_confirmed BOOLEAN DEFAULT false
 
 );
 
@@ -55,56 +55,56 @@ BEGIN
 
   -- Initialize fields with default values if this is a new record
   IF current_row.id IS NULL THEN
-    new_row.amount := (NEW.event -> 'amount');
+    new_row.amount := (NEW.event ->> 'amount')::BIGINT;
     new_row.approval_process_id := (NEW.event ->> 'approval_process_id')::UUID;
-    new_row.deposit_account_id := (NEW.event ->> 'deposit_account_id')::UUID;
-    new_row.reference := (NEW.event ->> 'reference');
     new_row.approved := (NEW.event ->> 'approved')::BOOLEAN;
-    new_row.ledger_tx_id := (NEW.event ->> 'ledger_tx_id')::UUID;
     new_row.audit_entry_ids := CASE
        WHEN NEW.event ? 'audit_entry_ids' THEN
          ARRAY(SELECT value::text::BIGINT FROM jsonb_array_elements_text(NEW.event -> 'audit_entry_ids'))
        ELSE ARRAY[]::BIGINT[]
      END
 ;
+    new_row.deposit_account_id := (NEW.event ->> 'deposit_account_id')::UUID;
     new_row.is_approval_process_concluded := false;
-    new_row.is_confirmed := false;
     new_row.is_cancelled := false;
+    new_row.is_confirmed := false;
+    new_row.ledger_tx_id := (NEW.event ->> 'ledger_tx_id')::UUID;
+    new_row.reference := (NEW.event ->> 'reference');
   ELSE
     -- Default all fields to current values
     new_row.amount := current_row.amount;
     new_row.approval_process_id := current_row.approval_process_id;
-    new_row.deposit_account_id := current_row.deposit_account_id;
-    new_row.reference := current_row.reference;
     new_row.approved := current_row.approved;
-    new_row.ledger_tx_id := current_row.ledger_tx_id;
     new_row.audit_entry_ids := current_row.audit_entry_ids;
+    new_row.deposit_account_id := current_row.deposit_account_id;
     new_row.is_approval_process_concluded := current_row.is_approval_process_concluded;
-    new_row.is_confirmed := current_row.is_confirmed;
     new_row.is_cancelled := current_row.is_cancelled;
+    new_row.is_confirmed := current_row.is_confirmed;
+    new_row.ledger_tx_id := current_row.ledger_tx_id;
+    new_row.reference := current_row.reference;
   END IF;
 
   -- Update only the fields that are modified by the specific event
   CASE event_type
     WHEN 'initialized' THEN
-      new_row.amount := (NEW.event -> 'amount');
+      new_row.amount := (NEW.event ->> 'amount')::BIGINT;
       new_row.approval_process_id := (NEW.event ->> 'approval_process_id')::UUID;
+      new_row.audit_entry_ids := array_append(COALESCE(current_row.audit_entry_ids, ARRAY[]::BIGINT[]), (NEW.event -> 'audit_info' ->> 'audit_entry_id')::BIGINT);
       new_row.deposit_account_id := (NEW.event ->> 'deposit_account_id')::UUID;
       new_row.reference := (NEW.event ->> 'reference');
-      new_row.audit_entry_ids := array_append(COALESCE(current_row.audit_entry_ids, ARRAY[]::BIGINT[]), (NEW.event -> 'audit_info' ->> 'audit_entry_id')::BIGINT);
     WHEN 'approval_process_concluded' THEN
       new_row.approval_process_id := (NEW.event ->> 'approval_process_id')::UUID;
       new_row.approved := (NEW.event ->> 'approved')::BOOLEAN;
       new_row.audit_entry_ids := array_append(COALESCE(current_row.audit_entry_ids, ARRAY[]::BIGINT[]), (NEW.event -> 'audit_info' ->> 'audit_entry_id')::BIGINT);
       new_row.is_approval_process_concluded := true;
     WHEN 'confirmed' THEN
-      new_row.ledger_tx_id := (NEW.event ->> 'ledger_tx_id')::UUID;
       new_row.audit_entry_ids := array_append(COALESCE(current_row.audit_entry_ids, ARRAY[]::BIGINT[]), (NEW.event -> 'audit_info' ->> 'audit_entry_id')::BIGINT);
       new_row.is_confirmed := true;
-    WHEN 'cancelled' THEN
       new_row.ledger_tx_id := (NEW.event ->> 'ledger_tx_id')::UUID;
+    WHEN 'cancelled' THEN
       new_row.audit_entry_ids := array_append(COALESCE(current_row.audit_entry_ids, ARRAY[]::BIGINT[]), (NEW.event -> 'audit_info' ->> 'audit_entry_id')::BIGINT);
       new_row.is_cancelled := true;
+      new_row.ledger_tx_id := (NEW.event ->> 'ledger_tx_id')::UUID;
   END CASE;
 
   INSERT INTO core_withdrawal_events_rollup (
@@ -114,14 +114,14 @@ BEGIN
     modified_at,
     amount,
     approval_process_id,
-    deposit_account_id,
-    reference,
     approved,
-    ledger_tx_id,
     audit_entry_ids,
+    deposit_account_id,
     is_approval_process_concluded,
+    is_cancelled,
     is_confirmed,
-    is_cancelled
+    ledger_tx_id,
+    reference
   )
   VALUES (
     new_row.id,
@@ -130,28 +130,28 @@ BEGIN
     new_row.modified_at,
     new_row.amount,
     new_row.approval_process_id,
-    new_row.deposit_account_id,
-    new_row.reference,
     new_row.approved,
-    new_row.ledger_tx_id,
     new_row.audit_entry_ids,
+    new_row.deposit_account_id,
     new_row.is_approval_process_concluded,
+    new_row.is_cancelled,
     new_row.is_confirmed,
-    new_row.is_cancelled
+    new_row.ledger_tx_id,
+    new_row.reference
   )
   ON CONFLICT (id) DO UPDATE SET
     last_sequence = EXCLUDED.last_sequence,
     modified_at = EXCLUDED.modified_at,
     amount = EXCLUDED.amount,
     approval_process_id = EXCLUDED.approval_process_id,
-    deposit_account_id = EXCLUDED.deposit_account_id,
-    reference = EXCLUDED.reference,
     approved = EXCLUDED.approved,
-    ledger_tx_id = EXCLUDED.ledger_tx_id,
     audit_entry_ids = EXCLUDED.audit_entry_ids,
+    deposit_account_id = EXCLUDED.deposit_account_id,
     is_approval_process_concluded = EXCLUDED.is_approval_process_concluded,
+    is_cancelled = EXCLUDED.is_cancelled,
     is_confirmed = EXCLUDED.is_confirmed,
-    is_cancelled = EXCLUDED.is_cancelled;
+    ledger_tx_id = EXCLUDED.ledger_tx_id,
+    reference = EXCLUDED.reference;
 
   RETURN NEW;
 END;

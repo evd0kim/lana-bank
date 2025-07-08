@@ -653,7 +653,14 @@ fn extract_fields_and_events_from_schema(
                 };
 
                 let mut event_field_names = Vec::new();
-                for (prop_name, prop_schema) in properties {
+                // Sort properties for deterministic iteration
+                let mut sorted_properties: Vec<(String, Value)> = properties
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect();
+                sorted_properties.sort_by(|a, b| a.0.cmp(&b.0));
+
+                for (prop_name, prop_schema) in &sorted_properties {
                     if prop_name == "type" || prop_name == "id" || prop_name == "audit_info" {
                         continue; // Skip the discriminator field, id (handled as common field), and audit_info
                     }
@@ -685,6 +692,8 @@ fn extract_fields_and_events_from_schema(
 
                 // Add event type info
                 if let Some(event_type_name) = event_type {
+                    // Sort event field names for deterministic output
+                    event_field_names.sort();
                     event_types.push(EventTypeInfo {
                         name: event_type_name,
                         fields: event_field_names,
@@ -695,7 +704,11 @@ fn extract_fields_and_events_from_schema(
     }
 
     // Add array fields from collection rollups that aren't already tracked
-    for set_field_name in set_field_info.keys() {
+    // Sort the set field names for deterministic iteration
+    let mut sorted_set_field_names: Vec<String> = set_field_info.keys().cloned().collect();
+    sorted_set_field_names.sort();
+
+    for set_field_name in &sorted_set_field_names {
         if !all_properties
             .iter()
             .any(|(name, _)| name == set_field_name)
@@ -796,7 +809,11 @@ fn extract_fields_and_events_from_schema(
     }
 
     // Add toggle fields for toggle events
-    for toggle_event in toggle_events {
+    // Sort toggle events for deterministic processing
+    let mut sorted_toggle_events: Vec<&str> = toggle_events.to_vec();
+    sorted_toggle_events.sort();
+
+    for toggle_event in &sorted_toggle_events {
         let toggle_field_name = format!("is_{}", to_snake_case(toggle_event));
 
         // Check if field already exists
@@ -844,10 +861,63 @@ fn extract_fields_and_events_from_schema(
         }
     }
 
-    // Keep fields in schema order (same as event types)
-    // Keep event_types in schema order (don't sort)
+    // Sort fields for deterministic output
+    fields.sort_by(|a, b| a.name.cmp(&b.name));
+
+    // Keep event types in schema order (don't sort)
 
     Ok((fields, event_types))
+}
+
+fn is_primitive_wrapper(schema: &Value) -> bool {
+    // A primitive wrapper has a "type" field that is a primitive type
+    // and optionally format, minimum, maximum, enum, or other constraint fields
+    if let Some(obj) = schema.as_object() {
+        // Must have a type field
+        if let Some(type_value) = obj.get("type") {
+            // Check if it's a primitive type
+            let is_primitive_type = match type_value {
+                Value::String(s) => {
+                    matches!(s.as_str(), "string" | "integer" | "number" | "boolean")
+                }
+                Value::Array(arr) => {
+                    // For nullable types like ["string", "null"]
+                    arr.iter().any(|v| {
+                        if let Value::String(s) = v {
+                            matches!(s.as_str(), "string" | "integer" | "number" | "boolean")
+                        } else {
+                            false
+                        }
+                    })
+                }
+                _ => false,
+            };
+
+            if !is_primitive_type {
+                return false;
+            }
+
+            // Check that it doesn't have properties (which would make it an object)
+            if obj.contains_key("properties") {
+                return false;
+            }
+
+            // Check that it doesn't have complex composition fields
+            if obj.contains_key("oneOf") || obj.contains_key("anyOf") || obj.contains_key("allOf") {
+                return false;
+            }
+
+            // If it's an array type, it's not a primitive wrapper
+            if let Value::String(s) = type_value {
+                if s == "array" || s == "object" {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+    false
 }
 
 fn json_schema_to_sql_type_with_definitions(
@@ -865,9 +935,26 @@ fn json_schema_to_sql_type_with_definitions(
 
         // Try to resolve other $refs if definitions are available
         if let Some(defs) = definitions {
-            if let Some(def_name) = ref_path.strip_prefix("#/definitions/") {
-                if let Some(definition) = defs.get("definitions").and_then(|d| d.get(def_name)) {
-                    return json_schema_to_sql_type_with_definitions(definition, definitions);
+            // Check both #/definitions/ and #/$defs/ patterns
+            let def_name = ref_path
+                .strip_prefix("#/definitions/")
+                .or_else(|| ref_path.strip_prefix("#/$defs/"));
+
+            if let Some(def_name) = def_name {
+                // Look for the definition in both "definitions" and "$defs"
+                let definition = defs
+                    .get("definitions")
+                    .and_then(|d| d.get(def_name))
+                    .or_else(|| defs.get("$defs").and_then(|d| d.get(def_name)));
+
+                if let Some(definition) = definition {
+                    // Check if this is a primitive wrapper (has only type and optionally format/minimum/maximum)
+                    if is_primitive_wrapper(definition) {
+                        return json_schema_to_sql_type_with_definitions(definition, definitions);
+                    } else {
+                        // Complex type, return JSONB
+                        return Ok("JSONB".to_string());
+                    }
                 }
             }
         }
@@ -899,7 +986,7 @@ fn json_schema_to_sql_type_with_definitions(
                             "integer" => {
                                 if let Some(Value::String(format)) = schema.get("format") {
                                     match format.as_str() {
-                                        "int64" => "BIGINT",
+                                        "int64" | "uint64" => "BIGINT",
                                         _ => "INTEGER",
                                     }
                                 } else {
@@ -935,7 +1022,7 @@ fn json_schema_to_sql_type_with_definitions(
                 "integer" => {
                     if let Some(Value::String(format)) = schema.get("format") {
                         match format.as_str() {
-                            "int64" => "BIGINT",
+                            "int64" | "uint64" => "BIGINT",
                             _ => "INTEGER",
                         }
                     } else {
