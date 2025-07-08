@@ -179,6 +179,7 @@ impl Applicants {
         })
     }
 
+    #[instrument(name = "applicant.handle_callback", skip(self, payload))]
     pub async fn handle_callback(&self, payload: serde_json::Value) -> Result<(), ApplicantError> {
         let customer_id: CustomerId = payload["externalUserId"]
             .as_str()
