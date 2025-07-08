@@ -65,6 +65,8 @@ jobs:
           params:
             CACHIX_AUTH_TOKEN: #@ data.values.cachix_auth_token
             CACHIX_CACHE_NAME: lana-bank-ci
+            CI: true
+            PREFER_PODMAN: "1"
           run:
             path: sh
             args:
@@ -99,6 +101,7 @@ jobs:
         params:
           CACHIX_AUTH_TOKEN: #@ data.values.cachix_auth_token
           CACHIX_CACHE_NAME: lana-bank-ci
+          CI: true
         run:
           path: sh
           args:
