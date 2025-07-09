@@ -3,7 +3,6 @@ mod generate;
 mod job;
 mod primitives;
 
-use es_entity::ListDirection;
 use tracing::instrument;
 
 use ::job::JobId;
