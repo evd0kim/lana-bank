@@ -3,6 +3,7 @@ mod generate;
 mod job;
 mod primitives;
 
+use es_entity::ListDirection;
 use tracing::instrument;
 
 use ::job::JobId;
@@ -188,6 +189,46 @@ where
                 query,
             )
             .await?;
+
+        Ok(result)
+    }
+
+    #[instrument(
+        name = "core_accounting.csv.latest_document_for_ledger_account_id",
+        skip(self),
+        err
+    )]
+    pub async fn latest_document_for_ledger_account_id(
+        &self,
+        sub: &<<Perms as PermissionCheck>::Audit as AuditSvc>::Subject,
+        ledger_account_id: impl Into<LedgerAccountId> + std::fmt::Debug,
+    ) -> Result<Option<Document>, AccountingCsvExportError> {
+        let ledger_account_id = ledger_account_id.into();
+
+        let _audit_info = self
+            .authz
+            .enforce_permission(
+                sub,
+                CoreAccountingObject::all_accounting_csvs(),
+                CoreAccountingAction::ACCOUNTING_CSV_LIST,
+            )
+            .await?;
+
+        let query = es_entity::PaginatedQueryArgs {
+            first: 1,
+            after: None,
+        };
+
+        let result = self
+            .document_storage
+            //uses list_for_reference_id_by_created_at with ListDirection::Descending by default
+            .list_for_reference_id_paginated(
+                ReferenceId::from(uuid::Uuid::from(ledger_account_id)),
+                query,
+            )
+            .await?
+            .entities
+            .pop();
 
         Ok(result)
     }
