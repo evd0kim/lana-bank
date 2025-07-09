@@ -58,6 +58,17 @@ gql`
     }
   }
 
+  query LastAccountingCsvForLedgerAccountId(
+    $ledgerAccountId: UUID!
+  ) {
+    latestAccountingCsvForLedgerId(ledgerAccountId: $ledgerAccountId) {
+        id
+        documentId
+        status
+        createdAt
+    }
+  }
+  
   mutation LedgerAccountCsvCreate($input: LedgerAccountCsvCreateInput!) {
     ledgerAccountCsvCreate(input: $input) {
       accountingCsvDocument {
@@ -101,57 +112,23 @@ export const ExportCsvDialog: React.FC<ExportCsvDialogProps> = ({
   ledgerAccountId,
 }) => {
   const t = useTranslations("ChartOfAccountsLedgerAccount.exportCsv")
-  const [selectedCsvId, setSelectedCsvId] = useState<string | null>(null)
-  const [csvOptions, setCsvOptions] = useState<CsvOption[]>([])
   const [isDownloading, setIsDownloading] = useState(false)
 
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const pollingCsvIdRef = useRef<string | null>(null)
 
-  const { data, loading, error, refetch } = useAccountingCsvsForLedgerAccountIdQuery({
-    variables: {
-      ledgerAccountId,
-      first: 5,
-    },
+  const { data, loading, refetch } = useLatestCsvForLedgerAccountQuery({
+    variables: { ledgerAccountId },
     skip: !isOpen,
     fetchPolicy: "network-only",
+    pollInterval: data?.latestCsvForLedgerAccount?.isProcessing ? 2000 : 0,
     notifyOnNetworkStatusChange: false,
   })
 
   const [createCsv, { loading: createLoading }] = useLedgerAccountCsvCreateMutation()
   const [generateDownloadLink] = useAccountingCsvDownloadLinkGenerateMutation()
 
-  useEffect(() => {
-    if (data?.accountingCsvsForLedgerAccountId.edges) {
-      const options = data.accountingCsvsForLedgerAccountId.edges.map((edge) => ({
-        id: edge.node.id,
-        documentId: edge.node.documentId,
-        label: `${formatDate(edge.node.createdAt)} - ${t(`status.${edge.node.status.toLowerCase()}`)}`,
-        status: edge.node.status,
-        createdAt: edge.node.createdAt,
-      }))
-      setCsvOptions(options)
-      if (pollingCsvIdRef.current) {
-        const pollingCsv = options.find(
-          (opt) => opt.documentId === pollingCsvIdRef.current,
-        )
-        if (pollingCsv) {
-          if (selectedCsvId !== pollingCsvIdRef.current) {
-            setSelectedCsvId(pollingCsvIdRef.current)
-          }
-          if (pollingCsv.status === DocumentStatus.Active) {
-            stopPolling()
-            toast.success(t("csvReady"))
-          } else if (pollingCsv.status === DocumentStatus.Archived) {
-            stopPolling()
-            toast.error(t("csvFailed"))
-          }
-        }
-      } else if (!selectedCsvId && options.length > 0) {
-        setSelectedCsvId(options[0].documentId)
-      }
-    }
-  }, [data, selectedCsvId, t])
+  const latestCsv = data?.latestCsvForLedgerAccount
 
   const startPolling = (csvId: string) => {
     pollingCsvIdRef.current = csvId
@@ -203,10 +180,7 @@ export const ExportCsvDialog: React.FC<ExportCsvDialogProps> = ({
   }
 
   const handleDownload = async () => {
-    if (!selectedCsvId) return
-
-    const selectedOption = csvOptions.find((opt) => opt.documentId === selectedCsvId)
-    if (!selectedOption || selectedOption.status !== DocumentStatus.Active) {
+    if (!latestCsv?.canDownload) {
       toast.error(t("errors.notReady"))
       return
     }
@@ -214,39 +188,24 @@ export const ExportCsvDialog: React.FC<ExportCsvDialogProps> = ({
     try {
       setIsDownloading(true)
       const result = await generateDownloadLink({
-        variables: {
-          input: {
-            documentId: selectedCsvId,
-          },
-        },
+        variables: { input: { documentId: latestCsv.documentId } },
       })
 
       if (result.data?.accountingCsvDownloadLinkGenerate.link.url) {
-        const url = result.data.accountingCsvDownloadLinkGenerate.link.url
-        window.open(url, "_blank")
+        window.open(result.data.accountingCsvDownloadLinkGenerate.link.url, "_blank")
+        toast.success(t("downloadStarted"))
       }
     } catch (err) {
-      console.error("Error downloading:", err)
       toast.error(t("errors.downloadFailed"))
     } finally {
       setIsDownloading(false)
     }
   }
 
-  const handleSelectChange = (value: string) => {
-    setSelectedCsvId(value)
-  }
-
   const handleClose = () => {
     stopPolling()
-    setSelectedCsvId(null)
     onClose()
   }
-
-  const isSelectedCompleted = selectedCsvId
-    ? csvOptions.find((opt) => opt.documentId === selectedCsvId)?.status ===
-      DocumentStatus.Active
-    : false
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -257,64 +216,46 @@ export const ExportCsvDialog: React.FC<ExportCsvDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          <div>
-            <h3 className="text-sm font-medium mb-3">{t("existingExports")}</h3>
-            {loading ? (
-              <div className="flex justify-center py-4">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : error ? (
-              <div className="text-destructive p-2 text-center text-sm">
-                {t("errors.loadFailed")}
-              </div>
-            ) : csvOptions.length === 0 ? (
-              <div className="text-center py-2 text-muted-foreground text-sm">
-                {t("noCsvs")}
-              </div>
-            ) : (
+          {latestCsv && (
               <div className="space-y-4">
-                <Select value={selectedCsvId || ""} onValueChange={handleSelectChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("selectExport")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {csvOptions.map((option) => (
-                      <SelectItem key={option.id} value={option.documentId}>
-                        <div className="flex items-center">
-                          {option.status === DocumentStatus.Active ? (
-                            <CheckCircle className="h-4 w-4 mr-2 text-success" />
-                          ) : (
-                            <Clock className="h-4 w-4 mr-2 text-warning" />
-                          )}
-                          {formatDate(option.createdAt)}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <h3 className="text-sm font-medium">{t("currentExport")}</h3>
 
-                <Button
-                  className="w-full"
-                  onClick={handleDownload}
-                  disabled={!selectedCsvId || !isSelectedCompleted || isDownloading}
-                >
-                  {isDownloading ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <FileDown className="h-4 w-4 mr-2" />
-                  )}
-                  {t("buttons.download")}
-                </Button>
-
-                {pollingCsvIdRef.current && (
-                  <div className="flex items-center justify-center py-2 text-muted-foreground text-sm">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    {t("processing")}
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">
+                    {t("generatedAt", { date: formatDate(latestCsv.generatedAt) })}
+                  </span>
+                    <CsvStatusBadge csv={latestCsv} />
                   </div>
-                )}
+
+                  {latestCsv.rowCount && (
+                      <p className="text-sm text-muted-foreground">
+                        {t("rowCount", { count: latestCsv.rowCount })}
+                      </p>
+                  )}
+
+                  {latestCsv.isProcessing ? (
+                      <div className="flex items-center mt-3">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <span className="text-sm">{t("processing")}</span>
+                      </div>
+                  ) : (
+                      <Button
+                          className="w-full mt-3"
+                          onClick={handleDownload}
+                          disabled={!latestCsv.canDownload || isDownloading}
+                      >
+                        {isDownloading ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                            <FileDown className="h-4 w-4 mr-2" />
+                        )}
+                        {t("buttons.download")}
+                      </Button>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
+          )}
 
           <div className="border-t pt-4">
             <h3 className="text-sm font-medium mb-3">{t("createNew")}</h3>

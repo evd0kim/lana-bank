@@ -1723,6 +1723,7 @@ export type Query = {
   disbursal?: Maybe<CreditFacilityDisbursal>;
   disbursals: CreditFacilityDisbursalConnection;
   journalEntries: JournalEntryConnection;
+  latestAccountingCsvForLedgerId?: Maybe<AccountingCsvDocument>;
   ledgerAccount?: Maybe<LedgerAccount>;
   ledgerAccountByCode?: Maybe<LedgerAccount>;
   ledgerTransaction?: Maybe<LedgerTransaction>;
@@ -1857,6 +1858,11 @@ export type QueryDisbursalsArgs = {
 export type QueryJournalEntriesArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   first: Scalars['Int']['input'];
+};
+
+
+export type QueryLatestAccountingCsvForLedgerIdArgs = {
+  ledgerAccountId: Scalars['UUID']['input'];
 };
 
 
@@ -2698,6 +2704,13 @@ export type AccountingCsvsForLedgerAccountIdQueryVariables = Exact<{
 
 
 export type AccountingCsvsForLedgerAccountIdQuery = { __typename?: 'Query', accountingCsvsForLedgerAccountId: { __typename?: 'AccountingCsvDocumentConnection', edges: Array<{ __typename?: 'AccountingCsvDocumentEdge', cursor: string, node: { __typename?: 'AccountingCsvDocument', id: string, documentId: string, status: DocumentStatus, createdAt: any } }>, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null } } };
+
+export type LastAccountingCsvForLedgerAccountIdQueryVariables = Exact<{
+  ledgerAccountId: Scalars['UUID']['input'];
+}>;
+
+
+export type LastAccountingCsvForLedgerAccountIdQuery = { __typename?: 'Query', latestAccountingCsvForLedgerId?: { __typename?: 'AccountingCsvDocument', id: string, documentId: string, status: DocumentStatus, createdAt: any } | null };
 
 export type LedgerAccountCsvCreateMutationVariables = Exact<{
   input: LedgerAccountCsvCreateInput;
@@ -5561,6 +5574,49 @@ export type AccountingCsvsForLedgerAccountIdQueryHookResult = ReturnType<typeof 
 export type AccountingCsvsForLedgerAccountIdLazyQueryHookResult = ReturnType<typeof useAccountingCsvsForLedgerAccountIdLazyQuery>;
 export type AccountingCsvsForLedgerAccountIdSuspenseQueryHookResult = ReturnType<typeof useAccountingCsvsForLedgerAccountIdSuspenseQuery>;
 export type AccountingCsvsForLedgerAccountIdQueryResult = Apollo.QueryResult<AccountingCsvsForLedgerAccountIdQuery, AccountingCsvsForLedgerAccountIdQueryVariables>;
+export const LastAccountingCsvForLedgerAccountIdDocument = gql`
+    query LastAccountingCsvForLedgerAccountId($ledgerAccountId: UUID!) {
+  latestAccountingCsvForLedgerId(ledgerAccountId: $ledgerAccountId) {
+    id
+    documentId
+    status
+    createdAt
+  }
+}
+    `;
+
+/**
+ * __useLastAccountingCsvForLedgerAccountIdQuery__
+ *
+ * To run a query within a React component, call `useLastAccountingCsvForLedgerAccountIdQuery` and pass it any options that fit your needs.
+ * When your component renders, `useLastAccountingCsvForLedgerAccountIdQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useLastAccountingCsvForLedgerAccountIdQuery({
+ *   variables: {
+ *      ledgerAccountId: // value for 'ledgerAccountId'
+ *   },
+ * });
+ */
+export function useLastAccountingCsvForLedgerAccountIdQuery(baseOptions: Apollo.QueryHookOptions<LastAccountingCsvForLedgerAccountIdQuery, LastAccountingCsvForLedgerAccountIdQueryVariables> & ({ variables: LastAccountingCsvForLedgerAccountIdQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<LastAccountingCsvForLedgerAccountIdQuery, LastAccountingCsvForLedgerAccountIdQueryVariables>(LastAccountingCsvForLedgerAccountIdDocument, options);
+      }
+export function useLastAccountingCsvForLedgerAccountIdLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<LastAccountingCsvForLedgerAccountIdQuery, LastAccountingCsvForLedgerAccountIdQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<LastAccountingCsvForLedgerAccountIdQuery, LastAccountingCsvForLedgerAccountIdQueryVariables>(LastAccountingCsvForLedgerAccountIdDocument, options);
+        }
+export function useLastAccountingCsvForLedgerAccountIdSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<LastAccountingCsvForLedgerAccountIdQuery, LastAccountingCsvForLedgerAccountIdQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<LastAccountingCsvForLedgerAccountIdQuery, LastAccountingCsvForLedgerAccountIdQueryVariables>(LastAccountingCsvForLedgerAccountIdDocument, options);
+        }
+export type LastAccountingCsvForLedgerAccountIdQueryHookResult = ReturnType<typeof useLastAccountingCsvForLedgerAccountIdQuery>;
+export type LastAccountingCsvForLedgerAccountIdLazyQueryHookResult = ReturnType<typeof useLastAccountingCsvForLedgerAccountIdLazyQuery>;
+export type LastAccountingCsvForLedgerAccountIdSuspenseQueryHookResult = ReturnType<typeof useLastAccountingCsvForLedgerAccountIdSuspenseQuery>;
+export type LastAccountingCsvForLedgerAccountIdQueryResult = Apollo.QueryResult<LastAccountingCsvForLedgerAccountIdQuery, LastAccountingCsvForLedgerAccountIdQueryVariables>;
 export const LedgerAccountCsvCreateDocument = gql`
     mutation LedgerAccountCsvCreate($input: LedgerAccountCsvCreateInput!) {
   ledgerAccountCsvCreate(input: $input) {
